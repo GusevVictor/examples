@@ -1,0 +1,6 @@
+<virtualhost *:{{ apache_port }}>
+  DocumentRoot /opt/html
+  <Directory /opt/html>
+    Require all granted
+  </Directory>
+</virtualhost>
