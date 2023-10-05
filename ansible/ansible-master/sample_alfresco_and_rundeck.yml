@@ -1,0 +1,27 @@
+- name: sync dump of db
+  synchronize: src=/tmp/pg_dump_alfresco.sql dest=/tmp/pg_dump_alfresco.sql
+  delegate_to: "{{ copy_from }}"
+  when: inventory_hostname == copy_to
+
+- name: create a snapshot
+  lvol:
+    vg: vg00
+    lv: lvol00
+    opts: -pr
+    snapshot: rundeck_snap
+    size: 20G
+  when: inventory_hostname == copy_from
+
+- name: mount rundeck_snap
+  mount:
+    path: /mnt/rundeck_snap
+    src: /dev/vg00/rundeck_snap
+    fstype: ext4
+    state: mounted
+    opts: noauto
+  when: inventory_hostname == copy_from
+  
+- name: sync contentstore
+  synchronize: src=/mnt/rundeck_snap/alfresco/alf_data/contentstore dest=/opt/alfresco/alf_data delete=yes
+  delegate_to: "{{ copy_from }}"
+  when: inventory_hostname == copy_to

@@ -1,0 +1,46 @@
+# PART 1
+
+- hosts: proxmox-setup
+  roles:
+     - { role: proxmox-setup, when: ssd_1 is defined and ssd_2 is defined and internal_ip is defined and external_ip is defined and gateway_ip is defined and node_name is defined and dns is defined and zlog_size is defined and zl2arc_size is defined}
+     - { role: proxmox-common }
+  
+# PART 2
+
+  - name: confirmation
+  pause:
+    prompt: "Вы уверены что хотите продолжить? В процессе работы будут УНИЧТОЖЕНЫ все данные! Press return to continue. Press Ctrl+c and then 'a' to abort"
+
+- name: copy templates
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: '/etc/ansible/roles/proxmox-setup/files/wipe.sh', dest: '/tmp/' }
+    - { src: '/etc/ansible/roles/proxmox-setup/files/make_zfs_part.sh.j2', dest: '/tmp/make_zfs_part.sh' }
+    - { src: '/etc/ansible/roles/proxmox-setup/files/mdadm.sh.j2', dest: '/tmp/mdadm.sh' }
+
+
+
+- name: run commands
+  command: "{{ item.command }}"
+  args:
+    creates: /var/ansible_playbook/it_was_ok
+  with_items:
+    - { command: 'bash /tmp/wipe.sh' }
+    - { command: 'bash /tmp/make_zfs_part.sh' }
+    - { command: 'ocs-sr -b -nogui -g auto -e1 auto -e2 -r -j2 -scr -p command restoredisk 2017-12-11-08-proxmox51-dummy {{ ssd_1 }}' }
+    - { command: 'ocs-sr -b -nogui -g auto -e1 auto -e2 -r -j2 -scr -p command restoredisk 2017-12-11-08-proxmox51-dummy {{ ssd_2 }}' }
+    - { command: 'sgdisk -e /dev/{{ ssd_1 }}' }
+    - { command: 'sgdisk -e /dev/{{ ssd_2 }}' }
+    - { command: 'sgdisk -n 0:0:+{{ zlog_size|quote }} -t 0:a504 -c 0:"ZoL_zlog_mirror_1" /dev/{{ ssd_1 }}' }
+    - { command: 'sgdisk -n 0:0:+{{ zlog_size|quote }} -t 0:a504 -c 0:"ZoL_zlog_mirror_2" /dev/{{ ssd_2 }}' }
+    - { command: 'sgdisk -n 0:0:+{{ zl2arc_size|quote }} -t 0:a504 -c 0:"ZoL_zl2arc_part_1" /dev/{{ ssd_1 }}' }
+    - { command: 'sgdisk -n 0:0:+{{ zl2arc_size|quote }} -t 0:a504 -c 0:"ZoL_zl2arc_part_2" /dev/{{ ssd_2 }}' }
+    - { command: 'partprobe /dev/{{ ssd_1 }}' }
+    - { command: 'partprobe /dev/{{ ssd_2 }}' }
+    - { command: 'bash /tmp/mdadm.sh' }
+
+- name: wait for lvm 
+  pause:
+    minutes: 1

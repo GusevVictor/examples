@@ -1,0 +1,32 @@
+- name: gitlab on gateway
+  synchronize: 
+    archive: yes
+    copy_links: yes
+    src: /etc/letsencrypt/live/gitlab.example.com/
+    dest: /etc/apache2/cert/gitlab/
+  when: "'gateway.example.com' in inventory_hostname"
+  notify:
+    - reloaded apache
+
+- name: project on gateway
+  synchronize: 
+    archive: yes
+    copy_links: yes
+    src: /etc/letsencrypt/live/project.example.com/
+    dest: /etc/apache2/cert/project/
+  when: "'gateway.example.com' in inventory_hostname"
+  notify:
+    - reloaded apache
+
+- name: mail
+  synchronize:
+    copy_links: yes
+    src: /etc/letsencrypt/live/mail.example.com/
+    dest: /etc/cert/letsencrypt
+    rsync_opts:
+       - "--chown=zimbra:zimbra"
+  when: "'mail.example.com' in inventory_hostname"
+  notify:
+    - apply_LE_cert_to_zimbra_step1
+    - apply_LE_cert_to_zimbra_step2
+    - restarted zimbra
