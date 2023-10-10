@@ -1,0 +1,12 @@
+# syntax=docker/dockerfile:1
+
+FROM ubuntu:22.04
+ARG BUILD_DATE
+ARG version
+LABEL org.label-schema.build-date=$BUILD_DATE
+LABEL maintainer="vgusev2007@yandex.ru"
+LABEL description="There is gcloud latest version"
+LABEL version=$version
+RUN apt-get update && apt-get install curl ssh -y
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.asc] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | tee /usr/share/keyrings/cloud.google.asc && apt-get update -y && apt-get install google-cloud-sdk -y
+CMD ["sleep", "infinity"]

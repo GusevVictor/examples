@@ -1,0 +1,43 @@
+version: '3.8'
+services:
+  kanboard:
+    image: kanboard/kanboard:v1.2.32
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - kanboard_data:/var/www/app/data
+      - kanboard_plugins:/var/www/app/plugins
+      - kanboard_ssl:/etc/nginx/ssl
+      - /srv/kanboard/upload/config.php:/var/www/app/data/config.php
+    environment:
+      DATABASE_URL: mysql://kanboard:xxx@db/kanboard
+      PLUGIN_INSTALLER: true
+      TZ: "Europe/Moscow"
+    networks:
+      - kanboard
+    restart: unless-stopped
+  db:
+    image: mariadb:lts-jammy
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: yyy
+      MYSQL_DATABASE: kanboard
+      MYSQL_USER: kanboard
+      MYSQL_PASSWORD: xxx
+      TZ: "Europe/Moscow"
+    volumes:
+    - db:/var/lib/mysql
+    networks:
+      - kanboard
+    restart: unless-stopped
+
+networks:
+  kanboard:
+    name: kanboard-network
+
+volumes:
+  kanboard_data:
+  kanboard_plugins:
+  kanboard_ssl:
+  db:

@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  gcloud:
+    image: vgusev:gcloud-v448.0.0
+    build: .
+    restart: unless-stopped

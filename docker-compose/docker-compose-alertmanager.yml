@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  alertmanager:
+    container_name: alertmanager
+    image: prom/alertmanager:v0.26.0
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - "./config:/config"
+      - alertmanager-data:/data
+    command: --config.file=/config/alertmanager.yml
+    environment:
+      TZ: "Europe/Moscow"
+  
+  
+volumes:
+  alertmanager-data:
