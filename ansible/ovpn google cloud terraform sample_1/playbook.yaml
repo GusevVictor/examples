@@ -1,0 +1,75 @@
+---
+-  hosts: openvpnservers
+   vars:
+     OVPN_DATA: ovpn-data-vgusev
+     VPN_DNS_NAME: VPN.TECHENERGOANALIT.RU
+
+   roles:
+     - geerlingguy.docker
+   tags:
+   - setup
+   - never
+
+   tasks:
+     - name: Install required system packages
+       apt:
+         pkg:
+           - python3-pip
+         state: latest
+         update_cache: true
+       tags:
+       - setup
+       - never
+
+     - name: Install Docker Module for Python
+       pip:
+         name: docker
+       tags:
+       - setup
+       - never
+
+     - name: Create OVPN volume
+       community.docker.docker_volume:
+         name: "{{ OVPN_DATA }}"
+       tags:
+       - setup
+       - never
+
+     - name: Run once ovpn_genconfig container
+       docker_container:
+         name: ovpn_genconfig
+         image: "kylemanna/openvpn"
+         command: ovpn_genconfig -u udp://{{ VPN_DNS_NAME }}
+         volumes:
+           - "{{ OVPN_DATA }}:/etc/openvpn"
+       tags:
+       - setup
+       - never
+
+     - name: Del ovpn_genconfig container
+       docker_container:
+         name: ovpn_genconfig
+         state: absent
+       tags:
+       - setup
+       - never
+
+     - name: Make script for ovpn initpki
+       ansible.builtin.lineinfile:
+         state: present
+         dest: /usr/local/bin/ovpn_initpki.sh
+         line: "{{ item }}"
+         create: yes
+         mode: 0755 
+       with_items: 
+         - "#!/bin/bash"
+         - "docker run -v {{ OVPN_DATA }}:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki"
+       tags:
+       - always
+
+
+     - name: print
+       debug:
+         msg: "{{ OVPN_DATA }}"
+       tags:
+       - always
